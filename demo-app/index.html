@@ -61,11 +61,17 @@
 
     .video-container {
       position: relative;
-      width: 640px;
-      height: 480px;
+      width: 100%;
+      max-width: 640px;
       background: #000;
       border-radius: 8px;
       overflow: hidden;
+    }
+
+    @media (max-width: 768px) {
+      .video-container {
+        max-width: 100%;
+      }
     }
 
     #webcam {

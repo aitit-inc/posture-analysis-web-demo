@@ -52,15 +52,30 @@ class PostureAnalysisApp {
       this.startBtn.disabled = true;
 
       this.stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 }
+        video: {
+          facingMode: 'user',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
       });
 
       this.video.srcObject = this.stream;
       await this.video.play();
 
+      // ビデオのメタデータが読み込まれるのを待つ
+      await new Promise<void>((resolve) => {
+        if (this.video.readyState >= 2) {
+          resolve();
+        } else {
+          this.video.addEventListener('loadedmetadata', () => resolve(), { once: true });
+        }
+      });
+
       // キャンバスのサイズを設定
-      this.canvas.width = this.video.videoWidth;
-      this.canvas.height = this.video.videoHeight;
+      this.resizeCanvas();
+
+      // リサイズイベントに対応
+      window.addEventListener('resize', () => this.resizeCanvas());
 
       this.faceBtn.disabled = false;
       this.poseBtn.disabled = false;
@@ -71,6 +86,19 @@ class PostureAnalysisApp {
       this.updateStatus('カメラの起動に失敗しました。', 'error');
       this.startBtn.disabled = false;
     }
+  }
+
+  private resizeCanvas() {
+    // キャンバスの内部解像度をビデオストリームの実解像度に設定
+    // これによりMediaPipeの座標系（0-1）とキャンバスの座標系が一致する
+    this.canvas.width = this.video.videoWidth;
+    this.canvas.height = this.video.videoHeight;
+
+    // コンテナの高さをビデオのアスペクト比に合わせて設定
+    const container = this.video.parentElement as HTMLElement;
+    const containerWidth = container.clientWidth;
+    const aspectRatio = this.video.videoHeight / this.video.videoWidth;
+    container.style.height = `${containerWidth * aspectRatio}px`;
   }
 
   private async setMode(newMode: DetectionMode) {
